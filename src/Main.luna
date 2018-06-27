@@ -1,0 +1,19 @@
+import Std.Foreign.C.Value
+import Std.Foreign
+import OpenCV.Magick
+import OpenCV.CV
+import OpenCV.Image
+
+
+«4»def main:
+    «9»imageFileName = "./data/ex1.jpg"
+    «16»imgGray = Image.read imageFileName (Channels ["I"])
+    «17»imgColor = Image.read imageFileName (Channels ['B', 'G', 'R', 'A'])
+    «38»eqGray = OpenCV.equalizeHistogram imgGray
+    «19»faceCascade = CascadeClassifier.load "./data/haarcascade_frontalface_alt.xml"
+    «39»facesList = faceCascade.detectMultiscale eqGray 1.1 2 2 1 1 Nothing Nothing
+    «40»each1 = facesList.foldLeft imgColor Rect.draw
+
+    None
+
+### META {"metas":[{"marker":9,"meta":{"_displayResult":false,"_selectedVisualizer":["ProjectVisualizer: internal: error","internal/error/error.html"],"_position":{"fromPosition":{"_vector2_y":128,"_vector2_x":-672}}}},{"marker":16,"meta":{"_displayResult":true,"_selectedVisualizer":["ProjectVisualizer: internal: placeholder","internal/placeholder/placeholder.html"],"_position":{"fromPosition":{"_vector2_y":128,"_vector2_x":-400}}}},{"marker":17,"meta":{"_displayResult":true,"_selectedVisualizer":["ProjectVisualizer: internal: placeholder","internal/placeholder/placeholder.html"],"_position":{"fromPosition":{"_vector2_y":480,"_vector2_x":-96}}}},{"marker":38,"meta":{"_displayResult":true,"_selectedVisualizer":["ProjectVisualizer: internal: placeholder","internal/placeholder/placeholder.html"],"_position":{"fromPosition":{"_vector2_y":128,"_vector2_x":-16}}}},{"marker":19,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":48,"_vector2_x":288}}}},{"marker":39,"meta":{"_displayResult":false,"_selectedVisualizer":["ProjectVisualizer: internal: error","internal/error/error.html"],"_position":{"fromPosition":{"_vector2_y":224,"_vector2_x":400}}}},{"marker":40,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":224,"_vector2_x":576}}}},{"marker":41,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}}]}

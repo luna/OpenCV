@@ -1,0 +1,188 @@
+import Std.Foreign
+import Std.Foreign.C.Value
+
+class Filter:
+    Point
+    Box
+    Triangle
+    Hermite
+    Hann
+    Hamming
+    Blackman
+    Gaussian
+    Quadratic
+    Cubic
+    Catrom
+    Mitchell
+    Jinc
+    Sinc
+    SincFast
+    Kaiser
+    Welch
+    Parzen
+    Bohman
+    Bartlett
+    Lagrange
+    Lanczos
+    LanczosSharp
+    Lanczos2
+    Lanczos2Sharp
+    Robidoux
+    RobidouxSharp
+    Cosine
+    Spline
+    LanczosRadius
+    CubicSpline
+
+    def toCArg: case self of
+        Point:         CInt.fromInt  1 . toCArg
+        Box:           CInt.fromInt  2 . toCArg
+        Triangle:      CInt.fromInt  3 . toCArg
+        Hermite:       CInt.fromInt  4 . toCArg
+        Hann:          CInt.fromInt  5 . toCArg
+        Hamming:       CInt.fromInt  6 . toCArg
+        Blackman:      CInt.fromInt  7 . toCArg
+        Gaussian:      CInt.fromInt  8 . toCArg
+        Quadratic:     CInt.fromInt  9 . toCArg
+        Cubic:         CInt.fromInt 10 . toCArg
+        Catrom:        CInt.fromInt 11 . toCArg
+        Mitchell:      CInt.fromInt 12 . toCArg
+        Jinc:          CInt.fromInt 13 . toCArg
+        Sinc:          CInt.fromInt 14 . toCArg
+        SincFast:      CInt.fromInt 15 . toCArg
+        Kaiser:        CInt.fromInt 16 . toCArg
+        Welch:         CInt.fromInt 17 . toCArg
+        Parzen:        CInt.fromInt 18 . toCArg
+        Bohman:        CInt.fromInt 19 . toCArg
+        Bartlett:      CInt.fromInt 20 . toCArg
+        Lagrange:      CInt.fromInt 21 . toCArg
+        Lanczos:       CInt.fromInt 22 . toCArg
+        LanczosSharp:  CInt.fromInt 23 . toCArg
+        Lanczos2:      CInt.fromInt 24 . toCArg
+        Lanczos2Sharp: CInt.fromInt 25 . toCArg
+        Robidoux:      CInt.fromInt 26 . toCArg
+        RobidouxSharp: CInt.fromInt 27 . toCArg
+        Cosine:        CInt.fromInt 28 . toCArg
+        Spline:        CInt.fromInt 29 . toCArg
+        LanczosRadius: CInt.fromInt 30 . toCArg
+        CubicSpline:   CInt.fromInt 31 . toCArg
+
+
+class MagickWand:
+    wand :: Pointer None
+
+    def toCArg: self.wand.toCArg
+
+    def _throwIfFail status:
+        case (status . toInt == 0).not  of
+            False: self._throwError
+            True: None
+
+    def _relinquish:
+        Magick._cSym "MagickRelinquishMemory"
+
+    def _cCall name ret args:
+        Magick._cCall name ret (args.prepend self.toCArg)
+
+    def _throwError:
+        severity = Pointer CInt . malloc
+        description = self._cCall "MagickGetException" CString [severity.toCArg]
+        descText = description.toText
+        self._relinquish.call (Pointer None) [description.ptr.toCArg]
+        throw descText
+
+    def _cCallStatus name args:
+        status = self._cCall name CInt args
+        self._throwIfFail status
+
+    def read filename:
+        self._cCallStatus "MagickReadImage" [CString.fromText filename . toCArg]
+        self
+
+    def readBlob filename:
+        self._cCallStatus "MagickReadImageBlob" [CString.fromText filename . toCArg]
+        self
+
+    def write filename:
+        self._cCallStatus "MagickWriteImage" [CString.fromText filename . toCArg]
+        self
+
+    def resize width height filter:
+        self._cCallStatus "MagickResizeImage" [CSize.fromInt width . toCArg, CSize.fromInt height . toCArg, filter.toCArg]
+        self
+
+    def width:
+        self._cCall "MagickGetImageWidth" CSize [] . toInt
+
+    def height:
+        self._cCall "MagickGetImageHeight" CSize [] . toInt
+
+    def toGrayscale:
+        self._cCallStatus "MagickSetImageType" [CInt.fromInt 2 . toCArg]
+        self
+
+    def _setImageFormat format:
+        self._cCallStatus "MagickSetImageFormat" [CString.fromText format . toCArg]
+        self
+
+    def getPNGBlob:
+        self._setImageFormat "PNG"
+        length = Pointer CSize . malloc
+        blob = self._cCall "MagickGetImageBlob" (Pointer CChar) [length.ptr.toCArg]
+        (blob, length.read.toInt)
+
+    def shortRep:
+        "Image " + self.width.toText + "x" + self.height.toText
+
+    def toJSON:
+        (mptr, len) = self.getPNGBlob
+        b = Base64.encode mptr.ptr len
+        ("data:image/png;base64," + b) . toJSON
+
+    def exportPixels pixelFormat:
+        w = self.width
+        h = self.height
+        mem = Pointer CUChar . mallocElems (w * h * pixelFormat.length)
+        self._cCallStatus "MagickExportImagePixels" [CSize.fromInt 0 . toCArg, CSize.fromInt 0 . toCArg, CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, CString.fromText pixelFormat . toCArg, CInt.fromInt 1 . toCArg, mem . toCArg]
+        mem
+
+    def importPixels pixelFormat w h mem:
+        self._cCallStatus "MagickImportImagePixels" [CSize.fromInt 0 . toCArg, CSize.fromInt 0 . toCArg, CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, CString.fromText pixelFormat . toCArg, CInt.fromInt 1 . toCArg, mem . toCArg]
+        self
+
+    def newImage w h:
+        bgWand = Magick._cCall "NewPixelWand" (Pointer None) []
+        Magick._cCall "PixelSetColor" CInt [bgWand.toCArg, CString.fromText "black" . toCArg]
+        self._cCall "MagickNewImage" CInt [CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, bgWand.toCArg]
+
+class Base64:
+    def encode ptr len:
+        f = lookupSymbol "b64" "base64_encode"
+        outLen = Pointer CSize . malloc
+        buf = f.call (Pointer CUChar) [ptr.toCArg, CSize.fromInt len . toCArg, outLen.toCArg]
+        outLen.free
+        CStringVal buf.ptr.cast . toText
+
+class Magick:
+    def new:
+        imInit = self._wandIsInstantiated
+        when imInit.not self.genesis
+
+        wandPtr = self._cCall "NewMagickWand" (Pointer None) []
+        destructor = self._cSym "DestroyMagickWand"
+
+        MagickWand wandPtr
+
+    def genesis:
+        self._cCall "MagickWandGenesis" None []
+
+    def _cSym name:
+        lookupSymbol "MagickWand-6.Q16" name
+
+    def _cCall name ret args:
+        self . _cSym name . call ret args
+
+    def _wandIsInstantiated:
+        self . _cCall "IsMagickWandInstantiated" CInt [] . toInt == 0
+
+### META {"metas":[{"marker":12,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":176,"_vector2_x":0}}}},{"marker":13,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":176,"_vector2_x":528}}}},{"marker":14,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}},{"marker":15,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":176}}}},{"marker":16,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":352}}}},{"marker":17,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":528}}}},{"marker":18,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":704}}}},{"marker":19,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":880}}}},{"marker":20,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":1056}}}},{"marker":10,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}},{"marker":11,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":176}}}},{"marker":5,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}},{"marker":6,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":528}}}},{"marker":7,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":176}}}},{"marker":8,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":704}}}},{"marker":9,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":352}}}},{"marker":4,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}}]}

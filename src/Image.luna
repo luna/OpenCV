@@ -1,0 +1,74 @@
+import Std.Foreign.C.Value
+import Std.Foreign
+import OpenCV.Magick
+
+class Channels:
+    channels :: List Text
+    def toText: self.channels.makeText ""
+    def size: self.channels.length
+    def toCArg:
+        shifted = (self.channels.length-1).shift 3
+        CInt.fromInt shifted . toCArg
+
+class Image:
+    Image
+    ImageVal:
+        width    :: Int
+        height   :: Int
+        channels :: Channels
+        data     :: Pointer CUChar
+
+    def width: case self of
+        ImageVal w _ _ _: w
+
+    def height: case self of
+        ImageVal _ h _ _: h
+
+    def channels: case self of
+        ImageVal _ _ c _: c
+
+    def data: case self of
+        ImageVal _ _ _ d: d
+
+    def toCArg: self.data.toCArg
+
+    def _alloc w h channels:
+        buff = Pointer CUChar . mallocElems (w * h * channels.size)
+        ImageVal w h channels buff
+
+    def copy:
+        new = self._alloc self.width self.height self.channels
+        memcpy = lookupSymbol cStdLib "memcpy"
+        size = self.width * self.height * self.channels.size
+        memcpy . call None [new.data.toCArg, self.data.toCArg, CInt.fromInt size . toCArg]
+        new
+
+    def shortRep: case self of
+        Image: "Image"
+        ImageVal w h _ _: "Image <" + w.toText + "×" + h.toText + ">"
+
+    def toJSON: case self of
+        ImageVal w h c d:
+            wand = Magick.new
+            wand.newImage w h
+            im = wand.importPixels c.toText w h d
+            (mptr, len) = im.getPNGBlob
+            b = Base64.encode mptr.ptr len
+            ("data:image/png;base64," + b) . toJSON
+
+    def read filepath channel:
+        wand = Magick.new
+        w1 = wand.read filepath
+        w = w1.width
+        h = w1.height
+        px = w1.exportPixels channel.toText
+        img = ImageVal w h channel px
+        img
+
+    def write filepath: case self of
+        ImageVal w h c d:
+            wand = Magick.new
+            wand.newImage w h
+            im = wand.importPixels c.toText w h d
+            im.write filepath
+            None
