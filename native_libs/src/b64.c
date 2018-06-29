@@ -8,6 +8,12 @@
 
 #include <stdlib.h>
 
+#ifdef _WIN32
+#define EXPORTDLL __declspec(dllexport)
+#else
+#define EXPORTDLL
+#endif
+
 
 static const unsigned char base64_table[65] =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
@@ -24,7 +30,7 @@ static const unsigned char base64_table[65] =
  * nul terminated to make it easier to use as a C string. The nul terminator is
  * not included in out_len.
  */
-unsigned char * base64_encode(const unsigned char *src, size_t len,
+EXPORTDLL unsigned char * base64_encode(const unsigned char *src, size_t len,
 			      size_t *out_len)
 {
 	unsigned char *out, *pos;
