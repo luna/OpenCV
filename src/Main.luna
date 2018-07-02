@@ -7,10 +7,6 @@ import OpenCV.Image
 
 
 «4»def main:
-    «41»dir = Directory.current
-    «42»case System.currentPlatform of
-        Windows: System.setEnv "MAGICK_CODER_MODULE_PATH" (dir + "\native_libs\windows")
-    «43»_: None
     «9»imageFileName = "./data/ex1.jpg"
     «16»imgGray = Image.read imageFileName (Channels ["I"])
     «17»imgColor = Image.read imageFileName (Channels ['B', 'G', 'R', 'A'])
