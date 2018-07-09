@@ -32,12 +32,12 @@ class Image:
 
     def toCArg: self.data.toCArg
 
-    def _alloc w h channels:
+    def alloc w h channels:
         buff = Pointer CUChar . mallocElems (w * h * channels.size)
         ImageVal w h channels buff
 
     def copy:
-        new = self._alloc self.width self.height self.channels
+        new = self.alloc self.width self.height self.channels
         memcpy = lookupSymbol cStdLib "memcpy"
         size = self.width * self.height * self.channels.size
         memcpy . call None [new.data.toCArg, self.data.toCArg, CInt.fromInt size . toCArg]

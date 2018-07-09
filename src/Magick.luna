@@ -73,62 +73,62 @@ class MagickWand:
 
     def toCArg: self.wand.toCArg
 
-    def _throwIfFail status:
+    def throwIfFail status:
         case (status . toInt == 0).not  of
-            False: self._throwError
+            False: self.throwError
             True: None
 
-    def _relinquish:
-        Magick._cSym "MagickRelinquishMemory"
+    def relinquish:
+        Magick.cSym "MagickRelinquishMemory"
 
-    def _cCall name ret args:
-        Magick._cCall name ret (args.prepend self.toCArg)
+    def cCall name ret args:
+        Magick.cCall name ret (args.prepend self.toCArg)
 
-    def _throwError:
+    def throwError:
         severity = Pointer CInt . malloc
-        description = self._cCall "MagickGetException" CString [severity.toCArg]
+        description = self.cCall "MagickGetException" CString [severity.toCArg]
         descText = description.toText
-        self._relinquish.call (Pointer None) [description.ptr.toCArg]
+        self.relinquish.call (Pointer None) [description.ptr.toCArg]
         throw descText
 
-    def _cCallStatus name args:
-        status = self._cCall name CInt args
-        self._throwIfFail status
+    def cCallStatus name args:
+        status = self.cCall name CInt args
+        self.throwIfFail status
 
     def read filename:
-        self._cCallStatus "MagickReadImage" [CString.fromText filename . toCArg]
+        self.cCallStatus "MagickReadImage" [CString.fromText filename . toCArg]
         self
 
     def readBlob filename:
-        self._cCallStatus "MagickReadImageBlob" [CString.fromText filename . toCArg]
+        self.cCallStatus "MagickReadImageBlob" [CString.fromText filename . toCArg]
         self
 
     def write filename:
-        self._cCallStatus "MagickWriteImage" [CString.fromText filename . toCArg]
+        self.cCallStatus "MagickWriteImage" [CString.fromText filename . toCArg]
         self
 
     def resize width height filter:
-        self._cCallStatus "MagickResizeImage" [CSize.fromInt width . toCArg, CSize.fromInt height . toCArg, filter.toCArg]
+        self.cCallStatus "MagickResizeImage" [CSize.fromInt width . toCArg, CSize.fromInt height . toCArg, filter.toCArg]
         self
 
     def width:
-        self._cCall "MagickGetImageWidth" CSize [] . toInt
+        self.cCall "MagickGetImageWidth" CSize [] . toInt
 
     def height:
-        self._cCall "MagickGetImageHeight" CSize [] . toInt
+        self.cCall "MagickGetImageHeight" CSize [] . toInt
 
     def toGrayscale:
-        self._cCallStatus "MagickSetImageType" [CInt.fromInt 2 . toCArg]
+        self.cCallStatus "MagickSetImageType" [CInt.fromInt 2 . toCArg]
         self
 
-    def _setImageFormat format:
-        self._cCallStatus "MagickSetImageFormat" [CString.fromText format . toCArg]
+    def setImageFormat format:
+        self.cCallStatus "MagickSetImageFormat" [CString.fromText format . toCArg]
         self
 
     def getPNGBlob:
-        self._setImageFormat "PNG"
+        self.setImageFormat "PNG"
         length = Pointer CSize . malloc
-        blob = self._cCall "MagickGetImageBlob" (Pointer CChar) [length.ptr.toCArg]
+        blob = self.cCall "MagickGetImageBlob" (Pointer CChar) [length.ptr.toCArg]
         (blob, length.read.toInt)
 
     def shortRep:
@@ -143,17 +143,17 @@ class MagickWand:
         w = self.width
         h = self.height
         mem = Pointer CUChar . mallocElems (w * h * pixelFormat.length)
-        self._cCallStatus "MagickExportImagePixels" [CSize.fromInt 0 . toCArg, CSize.fromInt 0 . toCArg, CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, CString.fromText pixelFormat . toCArg, CInt.fromInt 1 . toCArg, mem . toCArg]
+        self.cCallStatus "MagickExportImagePixels" [CSize.fromInt 0 . toCArg, CSize.fromInt 0 . toCArg, CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, CString.fromText pixelFormat . toCArg, CInt.fromInt 1 . toCArg, mem . toCArg]
         mem
 
     def importPixels pixelFormat w h mem:
-        self._cCallStatus "MagickImportImagePixels" [CSize.fromInt 0 . toCArg, CSize.fromInt 0 . toCArg, CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, CString.fromText pixelFormat . toCArg, CInt.fromInt 1 . toCArg, mem . toCArg]
+        self.cCallStatus "MagickImportImagePixels" [CSize.fromInt 0 . toCArg, CSize.fromInt 0 . toCArg, CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, CString.fromText pixelFormat . toCArg, CInt.fromInt 1 . toCArg, mem . toCArg]
         self
 
     def newImage w h:
-        bgWand = Magick._cCall "NewPixelWand" (Pointer None) []
-        Magick._cCall "PixelSetColor" CInt [bgWand.toCArg, CString.fromText "black" . toCArg]
-        self._cCall "MagickNewImage" CInt [CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, bgWand.toCArg]
+        bgWand = Magick.cCall "NewPixelWand" (Pointer None) []
+        Magick.cCall "PixelSetColor" CInt [bgWand.toCArg, CString.fromText "black" . toCArg]
+        self.cCall "MagickNewImage" CInt [CSize.fromInt w . toCArg, CSize.fromInt h . toCArg, bgWand.toCArg]
 
 class Base64:
     def encode ptr len:
@@ -165,24 +165,24 @@ class Base64:
 
 class Magick:
     def new:
-        imInit = self._wandIsInstantiated
+        imInit = self.wandIsInstantiated
         when imInit.not self.genesis
 
-        wandPtr = self._cCall "NewMagickWand" (Pointer None) []
-        destructor = self._cSym "DestroyMagickWand"
+        wandPtr = self.cCall "NewMagickWand" (Pointer None) []
+        destructor = self.cSym "DestroyMagickWand"
 
         MagickWand wandPtr
 
     def genesis:
-        self._cCall "MagickWandGenesis" None []
+        self.cCall "MagickWandGenesis" None []
 
-    def _cSym name:
+    def cSym name:
         lookupSymbol "MagickWand-6.Q16" name
 
-    def _cCall name ret args:
-        self . _cSym name . call ret args
+    def cCall name ret args:
+        self . cSym name . call ret args
 
-    def _wandIsInstantiated:
-        self . _cCall "IsMagickWandInstantiated" CInt [] . toInt == 0
+    def wandIsInstantiated:
+        self . cCall "IsMagickWandInstantiated" CInt [] . toInt == 0
 
 ### META {"metas":[{"marker":12,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":176,"_vector2_x":0}}}},{"marker":13,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":176,"_vector2_x":528}}}},{"marker":14,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}},{"marker":15,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":176}}}},{"marker":16,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":352}}}},{"marker":17,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":528}}}},{"marker":18,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":704}}}},{"marker":19,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":880}}}},{"marker":20,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":1056}}}},{"marker":10,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}},{"marker":11,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":176}}}},{"marker":5,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}},{"marker":6,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":528}}}},{"marker":7,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":176}}}},{"marker":8,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":704}}}},{"marker":9,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":352}}}},{"marker":4,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":0}}}}]}

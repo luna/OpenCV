@@ -5,11 +5,8 @@ import OpenCV.Magick
 import OpenCV.CV
 import OpenCV.Image
 
-
 «4»def main:
     «41»dir = Directory.current
-    «42»case System.currentPlatform of
-        Windows: System.setEnv "MAGICK_CODER_MODULE_PATH" (dir + "\native_libs\windows")
     «43»_: None
     «9»imageFileName = "./data/ex1.jpg"
     «16»imgGray = Image.read imageFileName (Channels ["I"])
@@ -18,6 +15,7 @@ import OpenCV.Image
     «19»faceCascade = CascadeClassifier.load "./data/haarcascade_frontalface_alt.xml"
     «39»facesList = faceCascade.detectMultiscale eqGray 1.1 2 2 1 1 Nothing Nothing
     «40»each1 = facesList.foldLeft imgColor Rect.draw
+    each1.write "data/lel.png"
     None
 
 ### META {"metas":[{"marker":41,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":224,"_vector2_x":752}}}},{"marker":42,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":224,"_vector2_x":928}}}},{"marker":43,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":224,"_vector2_x":1104}}}},{"marker":9,"meta":{"_displayResult":false,"_selectedVisualizer":["ProjectVisualizer: internal: error","internal/error/error.html"],"_position":{"fromPosition":{"_vector2_y":128,"_vector2_x":-672}}}},{"marker":16,"meta":{"_displayResult":false,"_selectedVisualizer":["ProjectVisualizer: internal: placeholder","internal/placeholder/placeholder.html"],"_position":{"fromPosition":{"_vector2_y":0,"_vector2_x":-464}}}},{"marker":17,"meta":{"_displayResult":false,"_selectedVisualizer":["ProjectVisualizer: internal: placeholder","internal/placeholder/placeholder.html"],"_position":{"fromPosition":{"_vector2_y":320,"_vector2_x":0}}}},{"marker":38,"meta":{"_displayResult":false,"_selectedVisualizer":["ProjectVisualizer: internal: placeholder","internal/placeholder/placeholder.html"],"_position":{"fromPosition":{"_vector2_y":128,"_vector2_x":-16}}}},{"marker":19,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":48,"_vector2_x":288}}}},{"marker":39,"meta":{"_displayResult":false,"_selectedVisualizer":["ProjectVisualizer: internal: error","internal/error/error.html"],"_position":{"fromPosition":{"_vector2_y":224,"_vector2_x":400}}}},{"marker":40,"meta":{"_displayResult":false,"_selectedVisualizer":null,"_position":{"fromPosition":{"_vector2_y":224,"_vector2_x":576}}}}]}

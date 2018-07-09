@@ -36,7 +36,7 @@ class Rect:
         a = 255.0
         res = img.copy
         mat = Mat.fromImage res
-        OpenCV._cCall "lunaCV_rectangle" None [mat.toCArg, CInt.fromInt rect.x.toInt . toCArg, CInt.fromInt rect.y.toInt . toCArg, CInt.fromInt (rect.width.toInt+rect.x.toInt) . toCArg, CInt.fromInt (rect.height.toInt+rect.y.toInt) . toCArg, CDouble.fromReal r . toCArg, CDouble.fromReal g . toCArg, CDouble.fromReal b . toCArg, CDouble.fromReal a . toCArg]
+        OpenCV.cCall "lunaCV_rectangle" None [mat.toCArg, CInt.fromInt rect.x.toInt . toCArg, CInt.fromInt rect.y.toInt . toCArg, CInt.fromInt (rect.width.toInt+rect.x.toInt) . toCArg, CInt.fromInt (rect.height.toInt+rect.y.toInt) . toCArg, CDouble.fromReal r . toCArg, CDouble.fromReal g . toCArg, CDouble.fromReal b . toCArg, CDouble.fromReal a . toCArg]
         res
 
 
@@ -45,30 +45,30 @@ class Mat:
     MatVal (Pointer None)
 
     def free:
-        OpenCV._cCall "lunaCV_free_mat" None [self.toCArg]
+        OpenCV.cCall "lunaCV_free_mat" None [self.toCArg]
 
     def toCArg: case self of
         MatVal a: a.toCArg
 
     def rows:
-        n = OpenCV._cCall "lunaCV_mat_rows" (CInt) [self.toCArg]
+        n = OpenCV.cCall "lunaCV_mat_rows" (CInt) [self.toCArg]
         n.toInt
 
     def cols:
-        n = OpenCV._cCall "lunaCV_mat_cols" (CInt) [self.toCArg]
+        n = OpenCV.cCall "lunaCV_mat_cols" (CInt) [self.toCArg]
         n.toInt
 
     def data:
-        px = OpenCV._cCall "lunaCV_mat_data" (Pointer CUChar) [self.toCArg]
+        px = OpenCV.cCall "lunaCV_mat_data" (Pointer CUChar) [self.toCArg]
         px
 
     def fromImage img:
-        mat = OpenCV._cCall "lunaCV_cv_mat" (Pointer None) [CInt.fromInt img.width . toCArg, CInt.fromInt img.height . toCArg, img.channels.toCArg, img.data.toCArg]
-        fin = OpenCV._cSym "lunaCV_free_mat"
+        mat = OpenCV.cCall "lunaCV_cv_mat" (Pointer None) [CInt.fromInt img.width . toCArg, CInt.fromInt img.height . toCArg, img.channels.toCArg, img.data.toCArg]
+        fin = OpenCV.cSym "lunaCV_free_mat"
         MatVal mat
 
-    def _write image filepath:
-        write = OpenCV._cCall "lunaCV_imwrite" None [Mat.fromImage image . toCArg, CString.fromText filepath . toCArg]
+    def write image filepath:
+        write = OpenCV.cCall "lunaCV_imwrite" None [Mat.fromImage image . toCArg, CString.fromText filepath . toCArg]
         None
 
 
@@ -80,20 +80,21 @@ class CascadeClassifier:
     CascadeClassifierVal (Pointer None)
 
     def free:
-        OpenCV._cCall "lunaCV_cascade_classifier_delete" None [self.toCArg]
+        OpenCV.cCall "lunaCV_cascade_classifier_delete" None [self.toCArg]
 
     def toCArg: case self of
         CascadeClassifierVal a: a.toCArg
 
-    def _throwIfFail status:
+    def throwIfFail status:
         case status.isNull of
             True: None
-            False: strStatus = CString.readPtr status
-                   throw strStatus.toText
+            False:
+                strStatus = CString.readPtr status
+                throw strStatus.toText
 
     def load xmlFile:
         ok = Pointer CInt . malloc
-        cascade = OpenCV._cCall "lunaCV_cascade_classifier_load" (Pointer None) [CString.fromText xmlFile . toCArg, ok.toCArg]
+        cascade = OpenCV.cCall "lunaCV_cascade_classifier_load" (Pointer None) [CString.fromText xmlFile . toCArg, ok.toCArg]
         case ok.read.toInt of
             0: CascadeClassifierVal cascade
             1: throw ("Unable to load xml file" + xmlFile)
@@ -104,10 +105,11 @@ class CascadeClassifier:
         mat   = Mat.fromImage img
         maxWidth = maxW.withDefault 0
         maxHeiht = maxH.withDefault 0
-        faces = OpenCV._cCall "lunaCV_cascade_classifier_detect_multiscale" (Pointer CInt) [mat.toCArg, self.toCArg, CDouble.fromReal scaleFactor . toCArg, CInt.fromInt minNeighbors . toCArg, CInt.fromInt flags . toCArg, CInt.fromInt minW . toCArg, CInt.fromInt minH . toCArg, CInt.fromInt maxWidth . toCArg, CInt.fromInt maxHeiht . toCArg, facesN.toCArg, error.toCArg]
+        faces = OpenCV.cCall "lunaCV_cascade_classifier_detect_multiscale" (Pointer CInt) [mat.toCArg, self.toCArg, CDouble.fromReal scaleFactor . toCArg, CInt.fromInt minNeighbors . toCArg, CInt.fromInt flags . toCArg, CInt.fromInt minW . toCArg, CInt.fromInt minH . toCArg, CInt.fromInt maxWidth . toCArg, CInt.fromInt maxHeiht . toCArg, facesN.toCArg, error.toCArg]
         case error.read.isNull of
-            True: rectArray = Array Rect . make facesN.read.toInt (PointerVal Rect faces.ptr.cast)
-                  rectArray.toList
+            True:
+                rectArray = Array Rect . make facesN.read.toInt (PointerVal Rect faces.ptr.cast)
+                rectArray.toList
             False: throw error.read.toText
 
 
@@ -115,13 +117,13 @@ class CascadeClassifier:
 class OpenCV:
     OpenCV
 
-    def _cSym name:
+    def cSym name:
         lookupSymbol "cv" name
 
-    def _cCall name ret args:
-        self . _cSym name . call ret args
+    def cCall name ret args:
+        self . cSym name . call ret args
 
     def equalizeHistogram img:
-        dst      = img._alloc img.width img.height img.channels
-        equalize = self . _cCall "lunaCV_equalizeHist" None [Mat.fromImage img . toCArg, Mat.fromImage dst . toCArg]
+        dst      = img.alloc img.width img.height img.channels
+        equalize = self . cCall "lunaCV_equalizeHist" None [Mat.fromImage img . toCArg, Mat.fromImage dst . toCArg]
         dst
