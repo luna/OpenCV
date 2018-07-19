@@ -1,0 +1,26 @@
+modulesSettings:
+  src/Main.luna:
+    typeRepToVisMap:
+    - - tag: TCons
+        contents:
+        - List
+        - - tag: TCons
+            contents:
+            - Rect
+            - []
+      - - ! 'LunaVisualizer: base: table'
+        - base/table/table.html
+    - - tag: TCons
+        contents:
+        - Image
+        - []
+      - - ! 'ProjectVisualizer: image: image'
+        - image/image/image.html
+    currentBreadcrumb: main
+    breadcrumbsSettings:
+    - - items:
+        - main
+      - breadcrumbCameraSettings:
+          logicalToScreen: ! '[[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[-76.0,-354.0,0.0,1.0]]'
+          screenToLogical: ! '[[1.0,0.0,0.0,0.0],[0.0,1.0,0.0,0.0],[0.0,0.0,1.0,0.0],[76.0,354.0,0.0,1.0]]'
+          lastInverse: 0

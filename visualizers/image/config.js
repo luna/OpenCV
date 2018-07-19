@@ -1,4 +1,4 @@
-module.exports = function () {
-    var placeholderVis = {name: "image", path: "image/image.html"};
-    return [placeholderVis];
+module.exports = function (t) {
+    var placeholderVis = {name: "image", path: "image.html"};
+    return t.constructor == 'Image' ? [placeholderVis] : [];
 };
